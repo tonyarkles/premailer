@@ -8,7 +8,11 @@ class Premailer
       # Merge CSS into the HTML document.
       #
       # @return [String] an HTML.
-      def to_inline_css
+      def to_inline_css(options = {})
+        options = {
+          :return_bare => false,
+        }.merge(options)
+
         doc = @processed_doc
         @unmergable_rules = CssParser::Parser.new
 
@@ -110,12 +114,22 @@ class Premailer
         end
 
         @processed_doc = doc
-        if is_xhtml?
+        
+        if options[:return_bare]
+          @processed_doc
+        elsif is_xhtml?
           # we don't want to encode carriage returns
           @processed_doc.to_xhtml(:encoding => nil).gsub(/&\#xD;/i, "\r")
         else
           @processed_doc.to_html
         end
+      end
+
+      def to_inline_css_fragment
+        doc = self.to_inline_css(:return_bare => true).clone
+        body = doc.css('body')[0]
+        body.name = 'div'
+        body.to_html
       end
 
       # Create a <tt>style</tt> element with un-mergable rules (e.g. <tt>:hover</tt>)
